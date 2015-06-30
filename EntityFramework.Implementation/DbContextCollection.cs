@@ -10,8 +10,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity;
 using System.Runtime.ExceptionServices;
-using System.Threading;
-using System.Threading.Tasks;
+using Numero3.EntityFramework.Implementation.Utils;
 using Numero3.EntityFramework.Interfaces;
 
 namespace Numero3.EntityFramework.Implementation
@@ -119,58 +118,6 @@ namespace Numero3.EntityFramework.Implementation
                     if (!_readOnly)
                     {
                         c += dbContext.SaveChanges();
-                    }
-
-                    // If we've started an explicit database transaction, time to commit it now.
-                    var tran = GetValueOrDefault(_transactions, dbContext);
-                    if (tran != null)
-                    {
-                        tran.Commit();
-                        tran.Dispose();
-                    }
-                }
-                catch (Exception e)
-                {
-                    lastError = ExceptionDispatchInfo.Capture(e);
-                }
-            }
-
-            _transactions.Clear();
-            _completed = true;
-
-            if (lastError != null)
-                lastError.Throw(); // Re-throw while maintaining the exception's original stack track
-
-            return c;
-        }
-
-        public Task<int> CommitAsync()
-        {
-            return CommitAsync(CancellationToken.None);
-        }
-
-        public async Task<int> CommitAsync(CancellationToken cancelToken)
-        {
-            if (cancelToken == null)
-                throw new ArgumentNullException("cancelToken");
-            if (_disposed)
-                throw new ObjectDisposedException("DbContextCollection");
-            if (_completed)
-                throw new InvalidOperationException("You can't call Commit() or Rollback() more than once on a DbContextCollection. All the changes in the DbContext instances managed by this collection have already been saved or rollback and all database transactions have been completed and closed. If you wish to make more data changes, create a new DbContextCollection and make your changes there.");
-
-            // See comments in the sync version of this method for more details.
-
-            ExceptionDispatchInfo lastError = null;
-
-            var c = 0;
-
-            foreach (var dbContext in _initializedDbContexts.Values)
-            {
-                try
-                {
-                    if (!_readOnly)
-                    {
-                        c += await dbContext.SaveChangesAsync(cancelToken).ConfigureAwait(false);
                     }
 
                     // If we've started an explicit database transaction, time to commit it now.

@@ -11,7 +11,7 @@ The alternative of manually instantiating DbContext instances and manually passi
 
 `DbContextScope` implements the ambient context pattern for DbContext instances. It's something that NHibernate users or anyone who has used the `TransactionScope` class to manage ambient database transactions will be familiar with.
 
-It doesn't force any particular design pattern or application architecture to be used. It works beautifully with dependency injection. And it works beautifully without. It of course works perfectly with async execution flows, including with the new async / await support introduced in .NET 4.5 and EF6. 
+It doesn't force any particular design pattern or application architecture to be used. It works beautifully with dependency injection. And it works beautifully without. 
 
 And most importantly, at the time of writing, `DbContextScope` has been battle-tested in a large-scale application for over two months and has performed without a hitch. 
 
@@ -29,10 +29,8 @@ This is the `DbContextScope` interface:
 public interface IDbContextScope : IDisposable
 {
     void SaveChanges();
-    Task SaveChangesAsync();
 
     void RefreshEntitiesInParentScope(IEnumerable entities);
-    Task RefreshEntitiesInParentScopeAsync(IEnumerable entities);
 
     IDbContextCollection DbContexts { get; }
 }
@@ -181,60 +179,7 @@ public int NumberPremiumUsers()
 ```
 
 ###Async support
-`DbContextScope` works with async execution flows as you would expect:
-
-```language-csharp
-public async Task RandomServiceMethodAsync(Guid userId)
-{
-    using (var dbContextScope = _dbContextScopeFactory.Create())
-    {
-        var user = await _userRepository.GetAsync(userId);
-        var orders = await _orderRepository.GetOrdersForUserAsync(userId);
-
-        [...]
-
-        await dbContextScope.SaveChangesAsync();
-    }
-}
-```
-
-In the example above, the `OrderRepository.GetOrdersForUserAsync()` method will be able to see and access the ambient DbContext instance despite the fact that it's being called in a separate thread than the one where the `DbContextScope` was initially created.
-
-This is made possible by the fact that `DbContextScope` stores itself in the CallContext. The CallContext automatically flows through async points. If you're curious about how it all works behind the scenes, Stephen Toub has written [an excellent blog post about it](http://blogs.msdn.com/b/pfxteam/archive/2012/06/15/executioncontext-vs-synchronizationcontext.aspx). But if all you want to do is use `DbContextScope`, you just have to know that: it just works.
-
-**WARNING**: There is one thing that you *must* always keep in mind when using any async flow with `DbContextScope`. Just like `TransactionScope`, `DbContextScope` only supports being used within a single logical flow of execution. 
-
-I.e. if you attempt to start multiple parallel tasks within the context of a `DbContextScope` (e.g. by creating multiple threads or multiple TPL `Task`), you will get into big trouble. This is because the ambient `DbContextScope` will flow through all the threads your parallel tasks are using. If code in these threads need to use the database, they will all use the same ambient `DbContext` instance, resulting the same the `DbContext` instance being used from multiple threads simultaneously. 
-
-In general, parallelizing database access within a single business transaction has little to no benefits and only adds significant complexity. Any parallel operation performed within the context of a business transaction should not access the database.
-
-However, if you really need to start a parallel task within a `DbContextScope` (e.g. to perform some out-of-band background processing independently from the outcome of the business transaction), then you **must** suppress the ambient context before starting the parallel task. Which you can easily do like this:
-
-```language-csharp
-public void RandomServiceMethod()
-{
-    using (var dbContextScope = _dbContextScopeFactory.Create())
-    {
-        // Do some work that uses the ambient context
-        [...]
-        
-        using (_dbContextScopeFactory.SuppressAmbientContext())
-        {
-            // Kick off parallel tasks that shouldn't be using the
-            // ambient context here. E.g. create new threads,
-            // enqueue work items on the ThreadPool or create 
-            // TPL Tasks. 
-            [...]
-        }
-
-		// The ambient context is available again here.
-        // Can keep doing more work as usual.
-        [...]
-
-        dbContextScope.SaveChanges();
-    }
-}
-```
+Because of .NET 4.0 targeting Async support is removed.
 
 ###Creating a non-nested DbContextScope
 This is an advanced feature that I would expect most applications to never need. Tread carefully when using this as it can create tricky issues and quickly lead to a maintenance nightmare. 

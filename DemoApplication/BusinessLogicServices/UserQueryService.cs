@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Threading.Tasks;
 using Numero3.EntityFramework.Demo.DatabaseContext;
 using Numero3.EntityFramework.Demo.DomainModel;
 using Numero3.EntityFramework.Demo.Repositories;
@@ -84,47 +83,7 @@ namespace Numero3.EntityFramework.Demo.BusinessLogicServices
 			}
 		}
 
-		public async Task<IList<User>> GetTwoUsersAsync(Guid userId1, Guid userId2)
-		{
-			/*
-			 * A very contrived example of ambient DbContextScope within an async flow.
-			 * 
-			 * Note that the ConfigureAwait(false) calls here aren't strictly necessary 
-			 * and are unrelated to DbContextScope. You can remove them if you want and 
-			 * the code will run in the same way. It is however good practice to configure
-			 * all your awaitables in library code to not continue 
-			 * on the captured synchronization context. It avoids having to pay the overhead 
-			 * of capturing the sync context and running the task continuation on it when 
-			 * library code doesn't need that context. If also helps prevent potential deadlocks 
-			 * if the upstream code has been poorly written and blocks on async tasks. 
-			 * 
-			 * "Library code" is any code in layers under the presentation tier. Typically any code
-			 * other that code in ASP.NET MVC / WebApi controllers or Window Form / WPF forms.
-			 * 
-			 * See http://blogs.msdn.com/b/pfxteam/archive/2012/04/13/10293638.aspx for 
-			 * more details.
-			 */
-
-			using (_dbContextScopeFactory.CreateReadOnly())
-			{
-				var user1 = await _userRepository.GetAsync(userId1).ConfigureAwait(false);
-
-				// We're now in the continuation of the first async task. This is most
-				// likely executing in a thread from the ThreadPool, i.e. in a different
-				// thread that the one where we created our DbContextScope. Our ambient
-				// DbContextScope is still available here however, which allows the call 
-				// below to succeed.
-
-				var user2 = await _userRepository.GetAsync(userId2).ConfigureAwait(false);
-
-				// In other words, DbContextScope works with async execution flow as you'd expect: 
- 				// It Just Works.  
-
-				return new List<User> {user1, user2}.Where(u => u != null).ToList();
-			}
-		}
-
-		public User GetUserUncommitted(Guid userId)
+	    public User GetUserUncommitted(Guid userId)
 		{
 			/*
 			 * An example of explicit database transaction. 

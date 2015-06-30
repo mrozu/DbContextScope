@@ -78,15 +78,6 @@ namespace Numero3.EntityFramework.Demo
 				Console.WriteLine("Press enter to continue...");
 				Console.ReadLine();
 
-				//-- Demo of DbContextScope within an async flow
-				Console.WriteLine("Trying to retrieve two users John and Jeanne sequentially in an asynchronous manner...");
-				// We're going to block on the async task here as we don't have a choice. No risk of deadlocking in any case as console apps
-				// don't have a synchronization context.
-				var usersFoundAsync = userQueryService.GetTwoUsersAsync(johnSpec.Id, jeanneSpec.Id).Result;
-				Console.WriteLine("OK. Found {0} persisted users.", usersFoundAsync.Count());
-
-				Console.WriteLine("Press enter to continue...");
-				Console.ReadLine();
 
 				//-- Demo of explicit database transaction. 
 				Console.WriteLine("Trying to retrieve user John within a READ UNCOMMITTED database transaction...");

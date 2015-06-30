@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Numero3.EntityFramework.Demo.DatabaseContext;
 using Numero3.EntityFramework.Demo.DomainModel;
 using Numero3.EntityFramework.Interfaces;
@@ -50,12 +49,7 @@ namespace Numero3.EntityFramework.Demo.Repositories
 			return DbContext.Users.Find(userId);
 		}
 
-		public Task<User> GetAsync(Guid userId)
-		{
-			return DbContext.Users.FindAsync(userId);
-		}
-
-		public void Add(User user)
+	    public void Add(User user)
 		{
 			DbContext.Users.Add(user);
 		}
